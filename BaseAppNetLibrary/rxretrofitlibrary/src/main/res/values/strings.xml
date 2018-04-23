@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">rxretrofitlibrary</string>
+
+    <string name="tv_progress_dialog">正在处理中,请稍后...</string>
+</resources>

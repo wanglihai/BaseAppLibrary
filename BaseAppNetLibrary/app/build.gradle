@@ -1,0 +1,100 @@
+apply plugin: 'com.android.application'
+
+/**
+ * 在项目根路径下创建一个文件key.properties
+ */
+def keystorePropertiesFile = rootProject.file('key.properties')
+//创建一个properties对象
+def keystoreProperties = new Properties()
+//加载key.properties里面的内容
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+android {
+
+    signingConfigs {
+        release {
+            storeFile file(keystoreProperties['storeFile']) //签名文件
+            storePassword keystoreProperties['storePassword']  //签名文件密码
+            keyAlias keystoreProperties['keyAlias']       //签名文件别名
+            keyPassword keystoreProperties['keyPassword']     //别名密码
+        }
+
+        debug {
+            storeFile file(keystoreProperties['storeFile']) //签名文件
+            storePassword keystoreProperties['storePassword']  //签名文件密码
+            keyAlias keystoreProperties['keyAlias']       //签名文件别名
+            keyPassword keystoreProperties['keyPassword']     //别名密码
+        }
+    }
+    compileSdkVersion 25
+    buildToolsVersion "25.0.0"
+    defaultConfig {
+        applicationId "com.wang.net"
+        minSdkVersion 15
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+//            minifyEnabled true
+//            zipAlignEnabled true  // Zipalign优化
+//            shrinkResources true // 移除无用的resource文件,必须和minifyEnabled 一起使用
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+            debuggable true
+        }
+        debug {
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    //设置包名
+    applicationVariants.all { variant ->
+        def buildType = variant.buildType.name
+        //android studio3.0之前命名
+        variant.outputs.each { output ->
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                //应用名+版本号+渠道名+构建类型+时间戳${variant.flavorName}
+                def fileName = "znxk_V${defaultConfig.versionName}_${variant.flavorName}_${releaseTime()}_${buildType}.apk"
+                //APK输出到默认目录
+                output.outputFile = new File(outputFile.parent, fileName)
+            }
+        }
+        //android studio3.0之后命名
+//        variant.outputs.all {
+//            outputFileName = "green_v${defaultConfig.versionName}_${variant.flavorName}_${releaseTime()}_${buildType}.apk"
+//        }
+    }
+
+    productFlavors {//多渠道打包
+        //命名规则和java一样，不能数字打头，不能纯数字
+        zhushou360 {}
+        xiaomi {}
+    }
+
+    productFlavors.all { flavor ->
+        //为manifest中meta-data的占位符进行赋值
+        flavor.manifestPlaceholders = [CHANNEL_VALUE: name]
+    }
+}
+
+//发布时间
+def releaseTime() {
+    //设置发布时间的时候不要设置小时，这样的话每个小时生成的包都不一样，在安装时studio会报找不见apk的异常
+//    return new Date().format('MMddHH', TimeZone.getTimeZone('GMT+8'))
+    return new Date().format('MMdd', TimeZone.getTimeZone('GMT+8'))
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:25.+'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    testCompile 'junit:junit:4.12'
+    compile project(':baselibrary')
+}
